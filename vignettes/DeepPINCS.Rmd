@@ -1,0 +1,484 @@
+---
+title: "Protein Interactions and Networks with Compounds based on Sequences using Deep Learning"
+author: "Dongmin Jung"
+date: March 21, 2021
+output:
+    rmarkdown::html_document:
+        highlight: pygments
+        toc: true
+        toc_depth: 2
+        number_sections: true
+        fig_width: 5
+        fig_height: 4
+vignette: >
+    %\VignetteIndexEntry{DeepPINCS}
+    %\VignetteEngine{knitr::rmarkdown}
+    %\VignetteEncoding{UTF-8}
+---
+
+
+
+
+
+<br><br>
+
+# Introduction
+The identification of novel compound-protein interaction (CPI) is important in drug discovery. Revealing unknown compound-protein interactions is useful to design a new drug for a target protein by screening candidate compounds. The accurate CPI prediction assists in effective drug discovery process. To identify potential CPI effectively, prediction methods based on machine learning and deep learning have been developed. Data for sequences are provided as discrete symbolic data. In the data, compounds are represented as SMILES (simplified molecular-input line-entry system) strings and proteins are sequences in which the characters are amino acids. The outcome is defined as a variable that indicates how strong two molecules interact with each other or whether there is an interaction between them. In this package, a deep-learning based model that takes only sequence information of both compounds and proteins as input and the outcome as output is used to predict CPI. The model is implemented by using compound and protein encoders with useful features. The CPI model also supports other modeling tasks, including protein-protein interaction (PPI), chemical-chemical interaction (CCI), or single compounds and proteins. Although the model is designed for proteins, DNA and RNA can be used if they are represented as sequences.
+
+Multilayer perceptron (MLP) is the simplest form of neural networks consisting only of fully connected layers. Convolutional Neural Network (CNN) has convolutional layers instead of fully connected layers in the initial phase of the network. Recurrent neural network (RNN) are distinguished from other classes by presence of components with memory, containing long short term memory (LSTM) and gated recurrent units (GRU). The graph neural network (GNN) is a class of deep learning methods designed to perform inference on graph data. The graph convolutional network (GCN) is a type of GNN that can work directly on graphs and take advantage of their structural information. The GCN enables to learn hidden layer representations that capture both graph structure and node features. Compounds are represented as graphs and GCN can be used to learn compound-protein interactions. In molecular graph representations, nodes represent atoms and edges represent bonds. Besides graphs, a molecular fingerprint can be extracted from SMILES strings. A molecular fingerprint is a way of encoding the structural features of a molecule. Fingerprints are special kinds of descriptors that characterize a molecule and its properties as a binary bit vector that represents the presence or absence of particular substructure in the molecule. The Chemistry Development Kit (CDK) is an open source toolkit for bioinformatics and cheminformatics. It can accept the SMILES notation of a molecule as input to calculate molecular descriptors and fingerprints or get structural information. It can be implemented in R by the rcdk package.
+
+
+
+
+<br><br>
+
+
+# Example
+
+## compound-protein interaction
+
+The "example_cpi" dataset has compound-protein pairs and their interactions. Each line has a SMILES string, an amino acid sequence, and a label. Here, the label 1 means that the pair of SMILES and amino acid sequences has interaction and 0 means that the pair does not have interaction. In order to avoid overfitting, the data is split into a training sample and a validation sample. The training sample is used to estimate parameters or weights of the deep learning models. The validation sample is an independent sample, set aside to monitor the misclassification error. Here, 70% of the data are used for training and 30% for validation.
+
+```{r, eval=TRUE}
+library(DeepPINCS)
+validation_split <- 0.3
+idx <- sample(seq_len(length(example_cpi[,1])))
+train_idx <- seq_len(length(example_cpi[,1])) %in%
+    idx[seq_len(round(length(example_cpi[,1]) * (1 - validation_split)))]
+```
+
+The input sequences are fed into encoders. We need to provide the list of arguments for compound and protein encoder networks and for fully connected layer. For compound and protein networks, input and output tensors of encoders are required. Here, we can choose the graph convolutional network (GCN), recurrent neural network (RNN), convolutional neural network (CNN), and multilayer perceptron (MLP) as encoders. Additionally, we can use our own encoders. Note that the GCN is only available for compounds. The arguments for the "compound" and "protein" are the function of encoders with input and output tensors. The "compound_arg" and "protein_arg" are the arguments of the functions. The compound and protein encoders are concatenated and they are passed to the dense layer. A dense layer is a fully connected layer. We now need to compile the model, this step configures the learning process for our neural network architecture. We need to provide three arguments including the optimization algorithm to be used, the loss function to be optimized and metrics for evaluation.
+
+```{r, eval=TRUE}
+net_args <- list(
+    compound = "gcn_in_out",
+    compound_args = list(
+        gcn_units = c(128, 64),
+        gcn_activation = c("relu", "relu"),
+        fc_units = c(10),
+        fc_activation = c("relu")),
+    protein = "cnn_in_out",
+    protein_args = list(
+        cnn_filters = c(32),
+        cnn_kernel_size = c(3),
+        cnn_activation = c("relu"),
+        fc_units = c(10),
+        fc_activation = c("relu")),
+    fc_units = c(1),
+    fc_activation = c("sigmoid"),
+    loss = "binary_crossentropy",
+    optimizer = keras::optimizer_adam(),
+    metrics = "accuracy")
+```
+
+For example, consider the GCN for compounds and the CNN for proteins. For the GCN, we have to set the maximum number of atoms since every compound has not the same number of atoms. The degree of an atom in the graph representation and the atomic symbol and implicit hydrogen count for an atom are used as molecular features. Similarly, we define the maximum number of amino acids because there will be proteins of different lengths. In other words, naturally, some of the proteins are shorter and longer. The layer for embeddings to help us map strings to vectors. For them, we need to provide the dimension of the dense embedding. The n-gram is available only for protein sequences. We can use "callbacks". The callback functions can terminate the training process, modify the learning rate, and save snapshots of the best version of our model during the training process.
+
+```{r, eval=FALSE}
+compound_max_atoms <- 50
+protein_embedding_dim <- 16
+protein_length_seq <- 100
+gcn_cnn_cpi <- fit_cpi(
+    smiles = example_cpi[train_idx, 1],
+    AAseq = example_cpi[train_idx, 2], 
+    outcome = example_cpi[train_idx, 3],
+    compound_type = "graph",
+    compound_max_atoms = compound_max_atoms,
+    protein_length_seq = protein_length_seq,
+    protein_embedding_dim = protein_embedding_dim,
+    protein_ngram_max = 2,
+    protein_ngram_min = 1,
+    smiles_val = example_cpi[!train_idx, 1],
+    AAseq_val = example_cpi[!train_idx, 2],
+    outcome_val = example_cpi[!train_idx, 3],
+    net_args = net_args,
+    epochs = 20,
+    batch_size = 64,
+    use_generator = TRUE,
+    callbacks = keras::callback_early_stopping(
+        monitor = "val_acc",
+        patience = 10,
+        restore_best_weights = TRUE))
+ttgsea::plot_model(gcn_cnn_cpi$model)
+```
+
+Using the trained model, we can predict whether pairs of SMILES and amino acid sequences have interaction or not. A very convenient way to evaluate the accuracy of a model is the use of a table that summarizes the performance of our algorithm against the data provided. The Receiver Operator Characteristic (ROC) is a quantitative analysis technique used in binary classification. The ROC curve is a helpful diagnostic for a model. The Area Under the Curve (AUC) can be calculated and provide a single score to summarize the plot that can be used to compare models. An alternative to the ROC curve is the precision-recall curve that can be useful for imbalanced data.
+
+```{r, eval=FALSE}
+pred <- predict_cpi(gcn_cnn_cpi,
+    smiles = example_cpi[!train_idx, 1],
+    AAseq = example_cpi[!train_idx, 2],
+    use_generator = TRUE,
+    batch_size = 32)
+pred_calss <- ifelse(pred$values > 0.5, 1, 0)
+table(pred_calss, example_cpi[!train_idx, 3])
+
+roc <- PRROC::roc.curve(scores.class0 = pred$values[example_cpi[!train_idx, 3] == 1],
+    scores.class1 = pred$values[example_cpi[!train_idx,3] == 0],
+    curve = TRUE)
+plot(roc)
+pr <- PRROC::pr.curve(scores.class0 = pred$values[example_cpi[!train_idx, 3] == 1],
+    scores.class1 = pred$values[example_cpi[!train_idx,3] == 0],
+    curve = TRUE)
+plot(pr)
+```
+
+
+
+
+## chemical-chemical interaction
+
+The chemical-chemical interactions such as drug-drug interactions (DDI) have become one of the emerging topics of the clinical drug development. Predictions of DDI are fueled by recent growth of knowledge in molecular biology, computation based simulation or predictions, and a better understanding of the inhibition and induction mechanisms. Here, the molecular fingerprint is used from SMILES strings. 
+
+```{r, eval=TRUE}
+library(DeepPINCS)
+validation_split <- 0.3
+idx <- sample(seq_len(length(example_cci[,1])))
+train_idx <- seq_len(length(example_cci[,1])) %in%
+    idx[seq_len(round(length(example_cci[,1]) * (1 - validation_split)))]
+
+mlp_mlp_cci <- fit_cpi(
+    smiles = example_cci[train_idx, 1:2],
+    outcome = example_cci[train_idx, 3],
+    compound_type = "fingerprint",
+    smiles_val = example_cci[!train_idx, 1:2],
+    outcome_val = example_cci[!train_idx, 3],
+    net_args = list(
+        compound = "mlp_in_out",
+        compound_args = list(
+            fc_units = c(10, 5),
+            fc_activation = c("relu", "relu")),
+        fc_units = c(1),
+        fc_activation = c("sigmoid"),
+        loss = "binary_crossentropy",
+        optimizer = keras::optimizer_adam(),
+        metrics = "accuracy"),
+    epochs = 20, batch_size = 64,
+    use_generator = TRUE,
+    callbacks = keras::callback_early_stopping(
+        monitor = "val_acc",
+        patience = 10,
+        restore_best_weights = TRUE))
+ttgsea::plot_model(mlp_mlp_cci$model)
+
+pred <- predict_cpi(mlp_mlp_cci,
+    smiles = example_cci[!train_idx, 1:2],
+    use_generator = TRUE,
+    batch_size = 32)
+pred_calss <- ifelse(pred$values > 0.5, 1, 0)
+table(pred_calss, example_cci[!train_idx, 3])
+```
+
+
+
+
+## protein-protein interaction
+
+The protein-protein interactions (PPIs) are biochemical events that play an important role in the functioning of the cell. The prediction of protein-protein interactions has important implications for understanding the behavioral processes of life, preventing diseases, and developing new drugs. Here, the n-gram for proteins is available. However, the q-gram would be better than the n-gram, since the q-gram is a string of q characters. In literature on text classification, the term n-gram is often used instead of the q-gram.
+
+```{r, eval=TRUE}
+validation_split <- 0.3
+idx <- sample(seq_len(length(example_ppi[,1])))
+train_idx <- seq_len(length(example_ppi[,1])) %in%
+    idx[seq_len(round(length(example_ppi[,1]) * (1 - validation_split)))]
+
+protein_embedding_dim <- 16
+protein_length_seq <- 100
+mlp_mlp_ppi <- fit_cpi(
+    AAseq = example_ppi[train_idx, 1:2],
+    outcome = example_ppi[train_idx, 3],
+    protein_length_seq = protein_length_seq,
+    protein_embedding_dim = protein_embedding_dim,
+    AAseq_val = example_ppi[!train_idx, 1:2],
+    outcome_val = example_ppi[!train_idx, 3],
+    net_args = list(
+        protein = "mlp_in_out",
+        protein_args = list(
+            fc_units = c(10, 5),
+            fc_activation = c("relu", "relu")),
+        fc_units = c(1),
+        fc_activation = c("sigmoid"),
+        loss = "binary_crossentropy",
+        optimizer = keras::optimizer_adam(),
+        metrics = "accuracy"),
+    epochs = 20, batch_size = 64,
+    use_generator = TRUE,
+    callbacks = keras::callback_early_stopping(
+        monitor = "val_acc",
+        patience = 10,
+        restore_best_weights = TRUE))
+ttgsea::plot_model(mlp_mlp_ppi$model)
+
+pred <- predict_cpi(mlp_mlp_ppi,
+    AAseq = example_ppi[!train_idx, 1:2],
+    use_generator = TRUE,
+    batch_size = 32)
+pred_calss <- ifelse(pred$values > 0.5, 1, 0)
+table(pred_calss, example_ppi[!train_idx,3])
+```
+
+Although the function "fit_cpi" is designed for amino acid sequences, we may instead use nucleic acid sequences, if they are composed of capital letters of an alphabet.
+
+```{r, eval=FALSE}
+validation_split <- 0.1
+idx <- sample(seq_len(length(example_pd[,1])))
+train_idx <- seq_len(length(example_pd[,1])) %in%
+    idx[seq_len(round(length(example_pd[,1]) * (1 - validation_split)))]
+
+protein_embedding_dim <- 16
+protein_length_seq <- 30
+mlp_mlp_pd <- fit_cpi(
+    AAseq = example_pd[train_idx, 1:2],
+    outcome = example_pd[train_idx, 3],
+    protein_length_seq = protein_length_seq,
+    protein_embedding_dim = protein_embedding_dim,
+    AAseq_val = example_pd[!train_idx, 1:2],
+    outcome_val = example_pd[!train_idx, 3],
+    net_args = list(
+        protein = "mlp_in_out",
+        protein_args = list(
+            fc_units = c(10, 5),
+            fc_activation = c("relu", "relu")),
+        fc_units = c(1),
+        fc_activation = c("sigmoid"),
+        loss = "binary_crossentropy",
+        optimizer = keras::optimizer_adam(),
+        metrics = "accuracy"),
+    epochs = 30, batch_size = 16,
+    use_generator = TRUE,
+    callbacks = keras::callback_early_stopping(
+        monitor = "val_acc",
+        patience = 10,
+        restore_best_weights = TRUE))
+
+pred <- predict_cpi(mlp_mlp_pd,
+    AAseq = example_pd[!train_idx, 1:2],
+    batch_size = 16)
+pred_calss <- ifelse(pred$values > 0.5, 1, 0)
+table(pred_calss, example_pd[!train_idx, 3])
+```
+
+
+
+
+## single compound
+
+Even though the function "fit_cpi" is designed for pairs of compounds, proteins, or both, we may instead use single compounds alone.
+
+```{r}
+validation_split <- 0.3
+idx <- sample(seq_len(length(example_chem[,1])))
+train_idx <- seq_len(length(example_chem[,1])) %in%
+    idx[seq_len(round(length(example_chem[,1]) * (1 - validation_split)))]
+
+compound_length_seq <- 50
+compound_embedding_dim <- 16
+gcn_chem <- fit_cpi(
+    smiles = example_chem[train_idx, 1],
+    outcome = example_chem[train_idx, 2],
+    compound_type = "sequence",
+    compound_length_seq = compound_length_seq,
+    compound_embedding_dim = compound_embedding_dim,
+    smiles_val = example_chem[!train_idx, 1],
+    outcome_val = example_chem[!train_idx, 2],
+    net_args = list(
+        compound = "mlp_in_out",
+        compound_args = list(
+            fc_units = c(5),
+            fc_activation = c("relu")),
+        fc_units = c(1),
+        fc_activation = c("sigmoid"),
+        loss='binary_crossentropy',
+        optimizer = keras::optimizer_adam(),
+        metrics = "accuracy"),
+    epochs = 20, batch_size = 16,
+    use_generator = TRUE,
+    callbacks = keras::callback_early_stopping(
+        monitor = "val_acc",
+        patience = 10,
+        restore_best_weights = TRUE))
+ttgsea::plot_model(gcn_chem$model)
+
+pred <- predict_cpi(gcn_chem, smiles = example_chem[!train_idx, 1])
+pred_calss <- ifelse(pred$values > 0.5, 1, 0)
+table(pred_calss, smiles = example_chem[!train_idx,2])
+```
+
+
+
+
+## single protein
+
+In a similar way, we can use single proteins, too. Our model can be extended to multiclass problems.
+
+```{r, eval=FALSE}
+example_prot[,2] <- as.numeric(factor(example_prot[,2])) - 1
+
+validation_split <- 0.3
+idx <- sample(seq_len(length(example_prot[,1])))
+train_idx <- seq_len(length(example_prot[,1])) %in%
+    idx[seq_len(round(length(example_prot[,1]) * (1 - validation_split)))]
+
+protein_embedding_dim <- 16
+protein_length_seq <- 100
+rnn_prot <- fit_cpi(
+    AAseq = example_prot[train_idx, 1],
+    outcome = to_categorical(example_prot[train_idx, 2]),
+    protein_length_seq = protein_length_seq,
+    protein_embedding_dim = protein_embedding_dim,
+    AAseq_val = example_prot[!train_idx, 1],
+    outcome_val = to_categorical(example_prot[!train_idx, 2]),
+    net_args = list(
+        protein = "rnn_in_out",
+        protein_args = list(
+            rnn_type = c("gru"),
+            rnn_bidirectional = c(TRUE),
+            rnn_units = c(50),
+            rnn_activation = c("relu"),
+            fc_units = c(10),
+            fc_activation = c("relu")),
+        fc_units = c(3),
+        fc_activation = c("softmax"),
+        loss = 'categorical_crossentropy',
+        optimizer = keras::optimizer_adam(clipvalue = 0.5),
+        metrics = "accuracy"),
+    epochs = 20, batch_size = 64,
+    use_generator = TRUE,
+    callbacks = keras::callback_early_stopping(
+        monitor = "val_acc",
+        patience = 10,
+        restore_best_weights = TRUE))
+ttgsea::plot_model(rnn_prot$model)
+
+val_index <- seq_len(length(example_prot[,2]))[!train_idx]
+if (!is.null(rnn_prot$preprocessing$removed_AAseq_val)) {
+    pred <- predict_prot(rnn_prot,
+        AAseq = example_prot[val_index[-rnn_prot$preprocessing$removed_AAseq_val], 1])
+    pred_calss <- apply(pred$values, 1, which.max) - 1
+    table(pred_calss, example_prot[val_index[-rnn_prot$preprocessing$removed_AAseq_val], 2])
+} else {
+    pred <- predict_cpi(rnn_prot, AAseq = example_prot[!train_idx, 1])
+    pred_calss <- apply(pred$values, 1, which.max) - 1
+    table(pred_calss, example_prot[!train_idx, 2])
+}
+```
+
+
+
+
+
+<br><br>
+
+# Case Study
+
+The process of developing drugs is extensive, laborious, expensive, and time consuming.
+Drug repurposing, also referred to as repositioning, significantly reduces the cost, risk, and time compared to traditional drug development strategies, by recycling already established drugs. In the drug discovery process, it is required to determine the cause of a disease and, thus, a potential biological target. A target can be any biological entity from RNA to a protein to a gene that is 'druggable' or accessible to binding with a drug-like compound. Drug interactions with a biological target change the shape or confirmation of some facet of the target when bound to a small molecule and alter the target's ability to function. This conformational change ideally triggers a desired biological response involved in the particular disease process. Here, deep learning models can be used to identify the candidate drugs for selected targets and disease.
+
+Suppose that we want to identify which existing antiviral drugs can be repurposed to target the SARS coronavirus 3C-like Protease. For training the deep learning model, we use the data from past bioassay data such as high throughput screening (HTS) assay on SARS-CoV 3CL Protease, which conserves large portion of the gene with SARS-CoV-2. For repurposing for COVID-19, the deep learning model is trained using this data to rank drug candidates from the antiviral library.
+
+```{r}
+compound_length_seq <- 50
+protein_length_seq <- 500
+compound_embedding_dim <- 16
+protein_embedding_dim <- 16
+
+# seed
+use_session_with_seed(1, disable_gpu = FALSE, disable_parallel_cpu = FALSE)
+mlp_mlp <- fit_cpi(
+    smiles = example_bioassay[,1],
+    AAseq = example_bioassay[,2], 
+    outcome = example_bioassay[,3],
+    compound_type = "sequence",
+    compound_length_seq = compound_length_seq,
+    protein_length_seq = protein_length_seq,
+    compound_embedding_dim = compound_embedding_dim,
+    protein_embedding_dim = protein_embedding_dim,
+    net_args = list(
+        compound = "mlp_in_out",
+        compound_args = list(
+            fc_units = c(10, 5),
+            fc_activation = c("relu", "relu")),
+        protein = "mlp_in_out",
+        protein_args = list(
+            fc_units = c(10, 5),
+            fc_activation = c("relu", "relu")),
+        fc_units = c(1),
+        fc_activation = c("sigmoid"),
+        loss = 'binary_crossentropy',
+        optimizer = keras::optimizer_adam(),
+        metrics = "accuracy"),
+    epochs = 20, batch_size = 64,
+    validation_split = 0.3,
+    verbose = 0,
+    callbacks = keras::callback_early_stopping(
+        monitor = "val_acc",
+        patience = 5,
+        restore_best_weights = TRUE))
+ttgsea::plot_model(mlp_mlp$model)
+
+pred <- predict_cpi(mlp_mlp,
+    antiviral_drug[,2],
+    rep(SARS_CoV2_3CL_Protease, nrow(antiviral_drug)))
+
+Result <- data.frame(antiviral_drug[,1], pred$values)
+colnames(Result) <- c("drug", "probability")
+data.table::data.table(Result[order(Result[,2], decreasing = TRUE),])
+```
+
+
+
+
+
+<br><br>
+
+# Session information
+
+```{r, eval=TRUE}
+sessionInfo()
+```
+
+
+
+
+
+<br><br>
+
+# References
+
+
+Balakin, K. V. (2009). Pharmaceutical data mining: approaches and applications for drug discovery. John Wiley & Sons.
+
+
+Huang, K., Fu, T., Glass, L. M., Zitnik, M., Xiao, C., & Sun, J. (2020). DeepPurpose: A Deep Learning Library for Drug-Target Interaction Prediction. Bioinformatics.
+
+
+Kipf, T. N., & Welling, M. (2016). Semi-supervised classification with graph convolutional networks. ICLR.
+
+
+Nguyen, T., Le, H., & Venkatesh, S. (2020). GraphDTA: prediction of drug-target binding affinity using graph convolutional networks. Bioinformatics.
+
+
+O'Donnell, J. J., Somberg, J., Idemyor, V., & O'Donnell, J. T. (Eds.). (2019). Drug Discovery and Development. CRC Press.
+
+
+Pedrycz, W., & Chen, S. M. (Eds.). (2020). Deep Learning: Concepts and Architectures. Springer.
+
+
+Srinivasa, K. G., Siddesh, G. M., & Manisekhar, S. R. (Eds.). (2020). Statistical Modelling and Machine Learning Principles for Bioinformatics Techniques, Tools, and Applications. Springer.
+
+
+Trabocchi, A. & Lenci, E. (2020). Small molecule drug discovery: methods, molecules and applications. Elsevier.
+
+
+Tsubaki, M., Tomii, K., & Sese, J. (2019). Compound-protein interaction prediction with end-to-end learning of neural networks for graphs and sequences. Bioinformatics.
+
+
+Van der Loo, M., & De Jonge, E. (2018). Statistical data cleaning with applications in R. John Wiley & Sons.
+
+
+Vogel, H. G., Maas, J., & Gebauer, A. (Eds.). (2010). Drug discovery and evaluation: methods in clinical pharmacology. Springer.
+
+
+Wang, L., Wang, H. F., Liu, S. R., Yan, X., & Song, K. J. (2019). Predicting protein-protein interactions from matrix-based protein sequence using convolution neural network and feature-selective rotation forest. Scientific reports.
+
+
+
