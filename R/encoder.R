@@ -10,7 +10,7 @@ gcn_in_out <- function(max_atoms, feature_dim,
     
     if (!exists("Layer")) {
         # from keras library
-        Layer <- function(classname, initialize, build = NULL, call = NULL, 
+        Layer <<- function(classname, initialize, build = NULL, call = NULL, 
             compute_output_shape = NULL, ...,  
             inherit = tensorflow::tf$keras$layers$Layer) {
             defs <- list(
