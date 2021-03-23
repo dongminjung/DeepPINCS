@@ -44,19 +44,19 @@ test_that("fit_cpi: match the names of arguments", {
         1) {
       stop("the number of layers for fc in gcn_in_out should be the same")
     }
-    layer_multi_linear <- keras::Layer(classname <- "MultiLinear", 
-                                       initialize <- function(units, ...) {
-                                         super()$`__init__`(...)
-                                         self$units <- units
-                                       }, build <- function(input_shape) {
-                                         self$kernel <- self$add_weight(shape = shape(input_shape[3], 
-                                                                                      self$units))
-                                         self$bias <- self$add_weight(shape = shape(self$units))
-                                       }, call <- function(inputs, ...) {
-                                         keras::k_dot(inputs, self$kernel) + self$bias
-                                       }, get_config <- function() {
-                                         list(units <- self$units, name <- self$name)
-                                       })
+    layer_multi_linear <- Layer(classname <- "MultiLinear", 
+                                initialize <- function(units, ...) {
+                                 super()$`__init__`(...)
+                                 self$units <- units
+                                }, build <- function(input_shape) {
+                                 self$kernel <- self$add_weight(shape = shape(input_shape[3], 
+                                                                              self$units))
+                                 self$bias <- self$add_weight(shape = shape(self$units))
+                                }, call <- function(inputs, ...) {
+                                 keras::k_dot(inputs, self$kernel) + self$bias
+                                }, get_config <- function() {
+                                 list(units <- self$units, name <- self$name)
+                                })
     inputA <- keras::layer_input(shape = c(max_Atoms, max_Atoms))
     inputX <- keras::layer_input(shape = c(max_Atoms, feature_dim))
     x <- inputX
@@ -128,19 +128,19 @@ test_that("fit_cpi: add dropout layer", {
         1) {
       stop("the number of layers for fc in gcn_in_out should be the same")
     }
-    layer_multi_linear <- keras::Layer(classname <- "MultiLinear", 
-                                       initialize <- function(units, ...) {
-                                         super()$`__init__`(...)
-                                         self$units <- units
-                                       }, build <- function(input_shape) {
-                                         self$kernel <- self$add_weight(shape = shape(input_shape[3], 
-                                                                                      self$units))
-                                         self$bias <- self$add_weight(shape = shape(self$units))
-                                       }, call <- function(inputs, ...) {
-                                         keras::k_dot(inputs, self$kernel) + self$bias
-                                       }, get_config <- function() {
-                                         list(units <- self$units, name <- self$name)
-                                       })
+    layer_multi_linear <- Layer(classname <- "MultiLinear", 
+                          initialize <- function(units, ...) {
+                           super()$`__init__`(...)
+                           self$units <- units
+                          }, build <- function(input_shape) {
+                           self$kernel <- self$add_weight(shape = shape(input_shape[3], 
+                                                                        self$units))
+                           self$bias <- self$add_weight(shape = shape(self$units))
+                          }, call <- function(inputs, ...) {
+                           keras::k_dot(inputs, self$kernel) + self$bias
+                          }, get_config <- function() {
+                           list(units <- self$units, name <- self$name)
+                          })
     inputA <- keras::layer_input(shape = c(max_atoms, max_atoms))
     inputX <- keras::layer_input(shape = c(max_atoms, feature_dim))
     x <- inputX
