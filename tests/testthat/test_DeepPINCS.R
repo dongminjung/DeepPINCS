@@ -62,7 +62,7 @@ test_that("fit_cpi: match the names of arguments", {
     x <- inputX
     for (i in seq_len(length(gcn_units))) {
       assign("temp_units", gcn_units[i], envir = globalenv())
-      x <- keras::layer_dot(c(inputA, x), axes = 0)
+      x <- keras::layer_dot(c(inputA, x), axes = 1)
       x <- x %>% layer_multi_linear(units = temp_units) %>% 
         keras::layer_activation(activation = gcn_activation[i])
     }
@@ -146,7 +146,7 @@ test_that("fit_cpi: add dropout layer", {
     x <- inputX
     for (i in seq_len(length(gcn_units))) {
       assign("temp_units", gcn_units[i], envir = globalenv())
-      x <- keras::layer_dot(c(inputA, x), axes = 0)
+      x <- keras::layer_dot(c(inputA, x), axes = 1)
       x <- x %>% layer_multi_linear(units = temp_units) %>% 
         keras::layer_activation(activation = gcn_activation[i]) %>%
         keras::layer_dropout(0.5)
