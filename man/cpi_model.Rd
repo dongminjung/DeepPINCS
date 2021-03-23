@@ -253,7 +253,6 @@ gcn_cnn_cpi <- fit_cpi(
         loss = "binary_crossentropy",
         optimizer = keras::optimizer_adam(),
         metrics = "accuracy"),
-    epochs = 2, batch_size = 16,
-    use_generator = TRUE)
+    epochs = 2, batch_size = 16)
 pred <- predict_cpi(gcn_cnn_cpi, example_cpi[101:110, 1], example_cpi[101:110, 2])
 }
