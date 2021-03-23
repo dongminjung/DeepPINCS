@@ -376,8 +376,6 @@ protein_length_seq <- 500
 compound_embedding_dim <- 16
 protein_embedding_dim <- 16
 
-# seed
-use_session_with_seed(1, disable_gpu = FALSE, disable_parallel_cpu = FALSE)
 mlp_mlp <- fit_cpi(
     smiles = example_bioassay[,1],
     AAseq = example_bioassay[,2], 
