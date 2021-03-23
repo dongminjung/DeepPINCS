@@ -1,7 +1,7 @@
 ---
 title: "Protein Interactions and Networks with Compounds based on Sequences using Deep Learning"
 author: "Dongmin Jung"
-date: March 21, 2021
+date: March 23, 2021
 output:
     rmarkdown::html_document:
         highlight: pygments
@@ -153,7 +153,6 @@ mlp_mlp_cci <- fit_cpi(
         optimizer = keras::optimizer_adam(),
         metrics = "accuracy"),
     epochs = 20, batch_size = 64,
-    use_generator = TRUE,
     callbacks = keras::callback_early_stopping(
         monitor = "val_acc",
         patience = 10,
@@ -162,7 +161,6 @@ ttgsea::plot_model(mlp_mlp_cci$model)
 
 pred <- predict_cpi(mlp_mlp_cci,
     smiles = example_cci[!train_idx, 1:2],
-    use_generator = TRUE,
     batch_size = 32)
 pred_calss <- ifelse(pred$values > 0.5, 1, 0)
 table(pred_calss, example_cci[!train_idx, 3])
@@ -201,7 +199,6 @@ mlp_mlp_ppi <- fit_cpi(
         optimizer = keras::optimizer_adam(),
         metrics = "accuracy"),
     epochs = 20, batch_size = 64,
-    use_generator = TRUE,
     callbacks = keras::callback_early_stopping(
         monitor = "val_acc",
         patience = 10,
@@ -210,7 +207,6 @@ ttgsea::plot_model(mlp_mlp_ppi$model)
 
 pred <- predict_cpi(mlp_mlp_ppi,
     AAseq = example_ppi[!train_idx, 1:2],
-    use_generator = TRUE,
     batch_size = 32)
 pred_calss <- ifelse(pred$values > 0.5, 1, 0)
 table(pred_calss, example_ppi[!train_idx,3])
@@ -264,7 +260,7 @@ table(pred_calss, example_pd[!train_idx, 3])
 
 Even though the function "fit_cpi" is designed for pairs of compounds, proteins, or both, we may instead use single compounds alone.
 
-```{r}
+```{r, eval=TRUE}
 validation_split <- 0.3
 idx <- sample(seq_len(length(example_chem[,1])))
 train_idx <- seq_len(length(example_chem[,1])) %in%
@@ -291,7 +287,6 @@ gcn_chem <- fit_cpi(
         optimizer = keras::optimizer_adam(),
         metrics = "accuracy"),
     epochs = 20, batch_size = 16,
-    use_generator = TRUE,
     callbacks = keras::callback_early_stopping(
         monitor = "val_acc",
         patience = 10,
