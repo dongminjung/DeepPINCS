@@ -105,7 +105,7 @@ gcn_in_out <- function(max_atoms, feature_dim,
     
     for (i in seq_len(length(gcn_units))) {
         assign("temp_units", gcn_units[i], envir = globalenv())
-        x <- keras::layer_dot(c(inputA, x), axes = 0)
+        x <- keras::layer_dot(c(inputA, x), axes = 1)
         x  <- x %>% 
             layer_multi_linear(units = temp_units) %>%
             keras::layer_activation(activation = gcn_activation[i])
