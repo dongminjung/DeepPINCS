@@ -28,8 +28,7 @@ gcn_cnn_cpi <- fit_cpi(smiles = example_cpi[1:100, 1],
                               loss = "binary_crossentropy",
                               optimizer = keras::optimizer_adam(),
                               metrics = "accuracy"),
-                       epochs = 1, batch_size = 16,
-                       use_generator = TRUE)
+                       epochs = 1, batch_size = 16)
 
 
 
@@ -111,8 +110,7 @@ test_that("fit_cpi: match the names of arguments", {
                                  optimizer = keras::optimizer_adam(),
                                  metrics = "accuracy"),
                           net_names = list(name_compound_max_atoms = "max_Atoms"),
-                          epochs = 1, batch_size = 16,
-                          use_generator = TRUE)
+                          epochs = 1, batch_size = 16)
   expect_type(gcn2_cnn_cpi, "list")
 })
 
@@ -196,8 +194,7 @@ test_that("fit_cpi: add dropout layer", {
                                  loss = "binary_crossentropy",
                                  optimizer = keras::optimizer_adam(),
                                  metrics = "accuracy"),
-                          epochs = 1, batch_size = 16,
-                          use_generator = TRUE)
+                          epochs = 1, batch_size = 16)
   expect_type(gcn3_cnn_cpi, "list")
 })
 
@@ -233,8 +230,7 @@ test_that("fit_cpi: miss gcn_units and gcn_activation", {
                    loss = "binary_crossentropy",
                    optimizer = keras::optimizer_adam(),
                    metrics = "accuracy"),
-            epochs = 1, batch_size = 16,
-            use_generator = TRUE))
+            epochs = 1, batch_size = 16))
 })
 
 
@@ -271,8 +267,7 @@ test_that("fit_cpi: incorrect cnn_filters", {
                    loss = "binary_crossentropy",
                    optimizer = keras::optimizer_adam(),
                    metrics = "accuracy"),
-            epochs = 1, batch_size = 16,
-            use_generator = TRUE))
+            epochs = 1, batch_size = 16))
 })
 
 
@@ -309,8 +304,7 @@ test_that("fit_cpi: incorrect argument of encoder", {
                    loss = "binary_crossentropy",
                    optimizer = keras::optimizer_adam(),
                    metrics = "accuracy"),
-            epochs = 1, batch_size = 16,
-            use_generator = TRUE))
+            epochs = 1, batch_size = 16))
 })
 
 
@@ -346,8 +340,7 @@ test_that("fit_cpi: incorrect protein encoder", {
                    loss = "binary_crossentropy",
                    optimizer = keras::optimizer_adam(),
                    metrics = "accuracy"),
-            epochs = 1, batch_size = 16,
-            use_generator = TRUE))
+            epochs = 1, batch_size = 16))
 })
 
 
@@ -383,8 +376,7 @@ test_that("fit_cpi: incorrect input", {
                    loss = "binary_crossentropy",
                    optimizer = keras::optimizer_adam(),
                    metrics = "accuracy"),
-            epochs = 1, batch_size = 16,
-            use_generator = TRUE))
+            epochs = 1, batch_size = 16))
 })
 
 
@@ -420,8 +412,7 @@ test_that("fit_cpi: incorrect compound_type", {
                    loss = "binary_crossentropy",
                    optimizer = keras::optimizer_adam(),
                    metrics = "accuracy"),
-            epochs = 1, batch_size = 16,
-            use_generator = TRUE))
+            epochs = 1, batch_size = 16))
 })
 
 
@@ -430,14 +421,6 @@ test_that("predict_cpi: list output", {
   expect_type(
     predict_cpi(gcn_cnn_cpi, example_cpi[201:210, 1], example_cpi[201:210, 2]),
     "list")
-})
-
-
-
-test_that("predict_cpi: miss batch_size", {
-  expect_error(
-    predict_cpi(gcn_cnn_cpi, example_cpi[201:210, 1], example_cpi[201:210, 2],
-                use_generator = TRUE))
 })
 
 
