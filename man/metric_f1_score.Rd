@@ -24,7 +24,7 @@ Mishra, A., Suseendran, G., & Phung, T. N. (Eds.). (2020). Soft Computing Applic
 }
 
 \examples{
-layer_multi_linear <- keras::Layer(
+layer_multi_linear <- Layer(
     classname <- "MultiLinear", 
     initialize <- function(units, ...) {
         super()$`__init__`(...)

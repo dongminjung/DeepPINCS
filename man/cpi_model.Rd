@@ -255,4 +255,28 @@ gcn_cnn_cpi <- fit_cpi(
         metrics = "accuracy"),
     epochs = 2, batch_size = 16)
 pred <- predict_cpi(gcn_cnn_cpi, example_cpi[101:110, 1], example_cpi[101:110, 2])
+
+gcn_cnn_cpi2 <- fit_cpi(
+    preprocessing = gcn_cnn_cpi$preprocessing,
+    net_args = list(
+        compound = "gcn_in_out",
+        compound_args = list(
+            gcn_units = c(128, 64),
+            gcn_activation = c("relu", "relu"),
+            fc_units = c(10),
+            fc_activation = c("relu")),
+        protein = "cnn_in_out",
+        protein_args = list(
+            cnn_filters = c(32),
+            cnn_kernel_size = c(3),
+            cnn_activation = c("relu"),
+            fc_units = c(10),
+            fc_activation = c("relu")),
+        fc_units = c(1),
+        fc_activation = c("sigmoid"),
+        loss = "binary_crossentropy",
+        optimizer = keras::optimizer_adam(),
+        metrics = "accuracy"),
+    epochs = 2, batch_size = 16)
+pred <- predict_cpi(gcn_cnn_cpi2, preprocessing = pred$preprocessing)
 }

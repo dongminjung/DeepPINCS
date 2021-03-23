@@ -22,7 +22,7 @@ Kose, U., & Alzubi, J. (2020). Deep learning for cancer diagnosis. Springer.
 }
 
 \examples{
-layer_multi_linear <- keras::Layer(
+layer_multi_linear <- Layer(
     classname <- "MultiLinear", 
     initialize <- function(units, ...) {
         super()$`__init__`(...)
