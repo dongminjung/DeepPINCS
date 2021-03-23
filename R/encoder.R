@@ -78,7 +78,7 @@ gcn_in_out <- function(max_atoms, feature_dim,
         }
     }
     
-    layer_multi_linear <- keras::Layer(
+    layer_multi_linear <- Layer(
         classname <- "MultiLinear", 
         initialize <- function(units, ...) {
             super()$`__init__`(...)
