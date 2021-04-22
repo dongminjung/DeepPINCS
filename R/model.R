@@ -636,7 +636,7 @@ fit_cpi <- function(smiles = NULL, AAseq = NULL, outcome,
         }
         
         model %>%
-            fit_generator(train_data, validation_data = validation_data,
+            fit(train_data, validation_data = validation_data,
                 steps_per_epoch = steps_per_epoch,
                 validation_steps = validation_steps, ...)
     }
@@ -754,7 +754,7 @@ predict_cpi <- function(modelRes, smiles = NULL, AAseq = NULL,
         values <- predict(modelRes$model, x)
     } else {
         steps <- ceiling(dim(x[[1]])[1]/batch_size)
-        values <- predict_generator(modelRes$model,
+        values <- predict(modelRes$model,
             modelRes$sampling_generator(
             x, batch_size = batch_size,
             shuffle = FALSE),
