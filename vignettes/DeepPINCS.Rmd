@@ -94,7 +94,6 @@ gcn_cnn_cpi <- fit_cpi(
     net_args = net_args,
     epochs = 20,
     batch_size = 64,
-    use_generator = TRUE,
     callbacks = keras::callback_early_stopping(
         monitor = "val_accuracy",
         patience = 10,
@@ -108,7 +107,6 @@ Using the trained model, we can predict whether pairs of SMILES and amino acid s
 pred <- predict_cpi(gcn_cnn_cpi,
     smiles = example_cpi[!train_idx, 1],
     AAseq = example_cpi[!train_idx, 2],
-    use_generator = TRUE,
     batch_size = 32)
 pred_calss <- ifelse(pred$values > 0.5, 1, 0)
 table(pred_calss, example_cpi[!train_idx, 3])
@@ -241,7 +239,6 @@ mlp_mlp_pd <- fit_cpi(
         optimizer = keras::optimizer_adam(),
         metrics = "accuracy"),
     epochs = 30, batch_size = 16,
-    use_generator = TRUE,
     callbacks = keras::callback_early_stopping(
         monitor = "val_accuracy",
         patience = 10,
@@ -339,7 +336,6 @@ rnn_prot <- fit_cpi(
         optimizer = keras::optimizer_adam(clipvalue = 0.5),
         metrics = "accuracy"),
     epochs = 20, batch_size = 64,
-    use_generator = TRUE,
     callbacks = keras::callback_early_stopping(
         monitor = "val_accuracy",
         patience = 10,
