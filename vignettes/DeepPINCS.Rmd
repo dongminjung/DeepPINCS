@@ -1,7 +1,7 @@
 ---
 title: "Protein Interactions and Networks with Compounds based on Sequences using Deep Learning"
 author: "Dongmin Jung"
-date: March 23, 2021
+date: April 22, 2021
 output:
     rmarkdown::html_document:
         highlight: pygments
@@ -41,6 +41,7 @@ The "example_cpi" dataset has compound-protein pairs and their interactions. Eac
 
 ```{r, eval=TRUE}
 library(DeepPINCS)
+example_cpi <- example_cpi[1:500,]
 validation_split <- 0.3
 idx <- sample(seq_len(length(example_cpi[,1])))
 train_idx <- seq_len(length(example_cpi[,1])) %in%
@@ -73,7 +74,7 @@ net_args <- list(
 
 For example, consider the GCN for compounds and the CNN for proteins. For the GCN, we have to set the maximum number of atoms since every compound has not the same number of atoms. The degree of an atom in the graph representation and the atomic symbol and implicit hydrogen count for an atom are used as molecular features. Similarly, we define the maximum number of amino acids because there will be proteins of different lengths. In other words, naturally, some of the proteins are shorter and longer. The layer for embeddings to help us map strings to vectors. For them, we need to provide the dimension of the dense embedding. The n-gram is available only for protein sequences. We can use "callbacks". The callback functions can terminate the training process, modify the learning rate, and save snapshots of the best version of our model during the training process.
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 compound_max_atoms <- 50
 protein_embedding_dim <- 16
 protein_length_seq <- 100
@@ -95,7 +96,7 @@ gcn_cnn_cpi <- fit_cpi(
     batch_size = 64,
     use_generator = TRUE,
     callbacks = keras::callback_early_stopping(
-        monitor = "val_acc",
+        monitor = "val_accuracy",
         patience = 10,
         restore_best_weights = TRUE))
 ttgsea::plot_model(gcn_cnn_cpi$model)
@@ -103,7 +104,7 @@ ttgsea::plot_model(gcn_cnn_cpi$model)
 
 Using the trained model, we can predict whether pairs of SMILES and amino acid sequences have interaction or not. A very convenient way to evaluate the accuracy of a model is the use of a table that summarizes the performance of our algorithm against the data provided. The Receiver Operator Characteristic (ROC) is a quantitative analysis technique used in binary classification. The ROC curve is a helpful diagnostic for a model. The Area Under the Curve (AUC) can be calculated and provide a single score to summarize the plot that can be used to compare models. An alternative to the ROC curve is the precision-recall curve that can be useful for imbalanced data.
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 pred <- predict_cpi(gcn_cnn_cpi,
     smiles = example_cpi[!train_idx, 1],
     AAseq = example_cpi[!train_idx, 2],
@@ -154,7 +155,7 @@ mlp_mlp_cci <- fit_cpi(
         metrics = "accuracy"),
     epochs = 20, batch_size = 64,
     callbacks = keras::callback_early_stopping(
-        monitor = "val_acc",
+        monitor = "val_accuracy",
         patience = 10,
         restore_best_weights = TRUE))
 ttgsea::plot_model(mlp_mlp_cci$model)
@@ -200,7 +201,7 @@ mlp_mlp_ppi <- fit_cpi(
         metrics = "accuracy"),
     epochs = 20, batch_size = 64,
     callbacks = keras::callback_early_stopping(
-        monitor = "val_acc",
+        monitor = "val_accuracy",
         patience = 10,
         restore_best_weights = TRUE))
 ttgsea::plot_model(mlp_mlp_ppi$model)
@@ -214,7 +215,7 @@ table(pred_calss, example_ppi[!train_idx,3])
 
 Although the function "fit_cpi" is designed for amino acid sequences, we may instead use nucleic acid sequences, if they are composed of capital letters of an alphabet.
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 validation_split <- 0.1
 idx <- sample(seq_len(length(example_pd[,1])))
 train_idx <- seq_len(length(example_pd[,1])) %in%
@@ -242,7 +243,7 @@ mlp_mlp_pd <- fit_cpi(
     epochs = 30, batch_size = 16,
     use_generator = TRUE,
     callbacks = keras::callback_early_stopping(
-        monitor = "val_acc",
+        monitor = "val_accuracy",
         patience = 10,
         restore_best_weights = TRUE))
 
@@ -288,7 +289,7 @@ gcn_chem <- fit_cpi(
         metrics = "accuracy"),
     epochs = 20, batch_size = 16,
     callbacks = keras::callback_early_stopping(
-        monitor = "val_acc",
+        monitor = "val_accuracy",
         patience = 10,
         restore_best_weights = TRUE))
 ttgsea::plot_model(gcn_chem$model)
@@ -305,7 +306,8 @@ table(pred_calss, smiles = example_chem[!train_idx,2])
 
 In a similar way, we can use single proteins, too. Our model can be extended to multiclass problems.
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
+example_prot <- example_prot[1:500,]
 example_prot[,2] <- as.numeric(factor(example_prot[,2])) - 1
 
 validation_split <- 0.3
@@ -339,7 +341,7 @@ rnn_prot <- fit_cpi(
     epochs = 20, batch_size = 64,
     use_generator = TRUE,
     callbacks = keras::callback_early_stopping(
-        monitor = "val_acc",
+        monitor = "val_accuracy",
         patience = 10,
         restore_best_weights = TRUE))
 ttgsea::plot_model(rnn_prot$model)
@@ -403,7 +405,7 @@ mlp_mlp <- fit_cpi(
     validation_split = 0.3,
     verbose = 0,
     callbacks = keras::callback_early_stopping(
-        monitor = "val_acc",
+        monitor = "val_accuracy",
         patience = 5,
         restore_best_weights = TRUE))
 ttgsea::plot_model(mlp_mlp$model)
@@ -414,7 +416,7 @@ pred <- predict_cpi(mlp_mlp,
 
 Result <- data.frame(antiviral_drug[,1], pred$values)
 colnames(Result) <- c("drug", "probability")
-data.table::data.table(Result[order(Result[,2], decreasing = TRUE),])
+Result[order(Result[,2], decreasing = TRUE),]
 ```
 
 
