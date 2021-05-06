@@ -1,7 +1,7 @@
 ---
 title: "Protein Interactions and Networks with Compounds based on Sequences using Deep Learning"
 author: "Dongmin Jung"
-date: April 22, 2021
+date: May 7, 2021
 output:
     rmarkdown::html_document:
         highlight: pygments
@@ -344,10 +344,10 @@ ttgsea::plot_model(rnn_prot$model)
 
 val_index <- seq_len(length(example_prot[,2]))[!train_idx]
 if (!is.null(rnn_prot$preprocessing$removed_AAseq_val)) {
-    pred <- predict_prot(rnn_prot,
-        AAseq = example_prot[val_index[-rnn_prot$preprocessing$removed_AAseq_val], 1])
+    pred <- predict_cpi(rnn_prot,
+        AAseq = example_prot[val_index[-rnn_prot$preprocessing$removed_AAseq_val[[1]]], 1])
     pred_calss <- apply(pred$values, 1, which.max) - 1
-    table(pred_calss, example_prot[val_index[-rnn_prot$preprocessing$removed_AAseq_val], 2])
+    table(pred_calss, example_prot[val_index[-rnn_prot$preprocessing$removed_AAseq_val[[1]]], 2])
 } else {
     pred <- predict_cpi(rnn_prot, AAseq = example_prot[!train_idx, 1])
     pred_calss <- apply(pred$values, 1, which.max) - 1
