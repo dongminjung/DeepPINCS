@@ -119,6 +119,8 @@ fit_cpi <- function(smiles = NULL, AAseq = NULL, outcome,
             AAseq_val <- checked_seq_val$AAseq
             outcome_val <- checked_seq_val$outcome
             result$preprocessing$outcome_val <- outcome_val
+            result$preprocessing$removed_smiles_val <- checked_seq_val$removed_smiles
+            result$preprocessing$removed_AAseq_val <- checked_seq_val$removed_AAseq
         }
         
         
