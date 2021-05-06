@@ -186,7 +186,9 @@ list of preprocessed results for "fit_cpi" or "predict_cpi", they are set to NUL
     \item protein_ngram_max : maximum size of an n-gram for protein sequences
     \item protein_ngram_min : minimum size of an n-gram for protein sequences
     \item removed_smiles : index for removed smiles while checking
-    \item protein_AAseq : index for removed AAseq while checking
+    \item removed_AAseq : index for removed AAseq while checking
+    \item removed_smiles_val : index for removed smiles of validation
+    \item removed_AAseq_val : index for removed AAseq of validation
 }
 }
     \item{batch_size}{
