@@ -12,11 +12,17 @@ The identification of novel compound-protein interaction (CPI) is important in d
 
 Python is required. Furthermore, tensorflow and kears should be installed and they should be connected to R (https://tensorflow.rstudio.com, https://keras.rstudio.com).
 
+To install the stable version from Bioconductor:
+```
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("DeepPINCS")
+```
+
 To install the development version from GitHub:
 ``` 
 devtools::install_github("dongminjung/DeepPINCS")
 ```
-
 
 
 
